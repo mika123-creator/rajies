@@ -1,0 +1,713 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Rajie’s Barber Shop — Admin Portal</title>
+  <meta name="robots" content="noindex, nofollow" />
+  
+  <!-- Google Fonts & Lucide Icons -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@700&family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@500;600&display=swap" rel="stylesheet">
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              gold: '#D4AF37',
+              goldHover: '#c19c2b',
+              dark: '#0B0C10',
+              darker: '#070709',
+              card: '#12141A',
+              cardBorder: 'rgba(212, 175, 55, 0.2)',
+              whatsapp: '#25D366'
+            }
+          },
+          fontFamily: {
+            heading: ['Cinzel', 'serif'],
+            sans: ['Plus Jakarta Sans', 'sans-serif'],
+            mono: ['Space Grotesk', 'monospace'],
+          }
+        }
+      }
+    }
+  </script>
+</head>
+<body class="bg-brand-darker text-gray-100 font-sans antialiased min-h-screen">
+
+  <!-- ================= LOGIN SCREEN (HIDDEN ON AUTH) ================= -->
+  <div id="loginScreen" class="min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-brand-darker via-brand-dark to-black">
+    <div class="w-full max-w-md bg-brand-card border border-brand-cardBorder rounded-3xl p-8 shadow-2xl relative">
+      <div class="w-14 h-14 rounded-2xl bg-brand-gold text-black font-heading font-black text-2xl flex items-center justify-center mx-auto mb-6 shadow-lg shadow-brand-gold/20">
+        R
+      </div>
+      <h1 class="text-2xl font-heading font-bold text-center text-white">Barber Shop Admin</h1>
+      <p class="text-xs text-gray-400 text-center mt-1">Management Portal & Content Editor</p>
+
+      <form id="loginForm" onsubmit="handleLogin(event)" class="mt-8 space-y-5">
+        <div>
+          <label class="block text-xs font-mono uppercase tracking-wider text-gray-300 mb-2">Access Password</label>
+          <div class="relative">
+            <input 
+              type="password" 
+              id="passwordInput" 
+              required 
+              placeholder="Enter master password" 
+              class="w-full px-4 py-3.5 rounded-xl bg-brand-dark border border-white/10 text-white placeholder-gray-500 focus:outline-none focus:border-brand-gold text-sm"
+            />
+          </div>
+          <p id="loginError" class="hidden text-xs text-red-400 mt-2 flex items-center gap-1">
+            <i data-lucide="alert-circle" class="w-3.5 h-3.5"></i> Incorrect password. Please try again.
+          </p>
+        </div>
+
+        <button 
+          type="submit" 
+          class="w-full py-3.5 rounded-xl bg-brand-gold hover:bg-brand-goldHover text-black font-bold text-sm tracking-wider uppercase transition-all shadow-lg shadow-brand-gold/20 flex items-center justify-center gap-2"
+        >
+          <i data-lucide="lock" class="w-4 h-4"></i>
+          <span>Enter Dashboard</span>
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- ================= AUTHENTICATED DASHBOARD ================= -->
+  <div id="adminDashboard" class="hidden min-h-screen flex flex-col">
+    
+    <!-- Top Bar -->
+    <header class="h-16 bg-brand-dark/95 border-b border-white/10 px-4 sm:px-8 flex items-center justify-between sticky top-0 z-40 backdrop-blur-md">
+      <div class="flex items-center gap-3">
+        <div class="w-8 h-8 rounded-lg bg-brand-gold text-black font-heading font-black text-base flex items-center justify-center">
+          R
+        </div>
+        <span class="font-heading font-bold text-sm sm:text-base text-white">Rajie’s Admin Panel</span>
+        <span class="hidden sm:inline-block px-2.5 py-0.5 rounded-full text-[10px] font-mono bg-green-500/10 text-green-400 border border-green-500/20">Active Session</span>
+      </div>
+
+      <div class="flex items-center gap-3">
+        <a href="index.html" target="_blank" class="px-3.5 py-2 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-xs font-semibold text-gray-200 flex items-center gap-2 transition-colors">
+          <i data-lucide="external-link" class="w-3.5 h-3.5 text-brand-gold"></i>
+          <span>View Live Site</span>
+        </a>
+        <button onclick="handleLogout()" class="px-3.5 py-2 rounded-xl bg-red-500/10 hover:bg-red-500/20 border border-red-500/20 text-xs font-semibold text-red-400 flex items-center gap-2 transition-colors">
+          <i data-lucide="log-out" class="w-3.5 h-3.5"></i>
+          <span>Sign Out</span>
+        </button>
+      </div>
+    </header>
+
+    <!-- Main Workspace -->
+    <div class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      
+      <!-- Feedback Banner -->
+      <div id="saveToast" class="fixed bottom-6 right-6 bg-brand-whatsapp text-black px-5 py-3 rounded-2xl font-bold text-xs shadow-2xl flex items-center gap-2 transform translate-y-24 opacity-0 transition-all duration-300 z-50">
+        <i data-lucide="check-circle-2" class="w-4 h-4"></i>
+        <span>Changes saved & published to website!</span>
+      </div>
+
+      <!-- Navigation Tabs -->
+      <div class="flex items-center gap-2 overflow-x-auto pb-4 border-b border-white/10 mb-8 text-xs font-mono">
+        <button onclick="switchTab('tab-general')" class="tab-btn px-4 py-2.5 rounded-xl bg-brand-gold text-black font-bold transition-all" data-tab="tab-general">
+          Business Details
+        </button>
+        <button onclick="switchTab('tab-services')" class="tab-btn px-4 py-2.5 rounded-xl bg-white/5 hover:bg-white/10 text-gray-300 transition-all" data-tab="tab-services">
+          Services & Prices
+        </button>
+        <button onclick="switchTab('tab-gallery')" class="tab-btn px-4 py-2.5 rounded-xl bg-white/5 hover:bg-white/10 text-gray-300 transition-all" data-tab="tab-gallery">
+          Gallery Photos
+        </button>
+        <button onclick="switchTab('tab-hours')" class="tab-btn px-4 py-2.5 rounded-xl bg-white/5 hover:bg-white/10 text-gray-300 transition-all" data-tab="tab-hours">
+          Opening Hours
+        </button>
+        <button onclick="switchTab('tab-content')" class="tab-btn px-4 py-2.5 rounded-xl bg-white/5 hover:bg-white/10 text-gray-300 transition-all" data-tab="tab-content">
+          Hero & About Copy
+        </button>
+        <button onclick="switchTab('tab-security')" class="tab-btn px-4 py-2.5 rounded-xl bg-white/5 hover:bg-white/10 text-gray-300 transition-all" data-tab="tab-security">
+          Security & Password
+        </button>
+        <button onclick="switchTab('tab-backup')" class="tab-btn px-4 py-2.5 rounded-xl bg-white/5 hover:bg-white/10 text-gray-300 transition-all" data-tab="tab-backup">
+          Backup / Restore
+        </button>
+      </div>
+
+      <!-- ================= TAB 1: BUSINESS DETAILS ================= -->
+      <div id="tab-general" class="tab-content space-y-6">
+        <div class="bg-brand-card rounded-2xl border border-white/10 p-6">
+          <h2 class="text-lg font-heading font-bold text-white mb-4">Core Contact & Location</h2>
+          
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+            <div>
+              <label class="block text-xs font-mono uppercase text-gray-400 mb-2">Business Name</label>
+              <input type="text" id="cfg_shopName" class="w-full px-4 py-3 rounded-xl bg-brand-dark border border-white/10 text-white text-sm" />
+            </div>
+            <div>
+              <label class="block text-xs font-mono uppercase text-gray-400 mb-2">WhatsApp / Phone Number</label>
+              <input type="text" id="cfg_phone" class="w-full px-4 py-3 rounded-xl bg-brand-dark border border-white/10 text-white text-sm" />
+            </div>
+            <div class="md:col-span-2">
+              <label class="block text-xs font-mono uppercase text-gray-400 mb-2">Full Address</label>
+              <input type="text" id="cfg_address" class="w-full px-4 py-3 rounded-xl bg-brand-dark border border-white/10 text-white text-sm" />
+            </div>
+            <div class="md:col-span-2">
+              <label class="block text-xs font-mono uppercase text-gray-400 mb-2">Announcement Bar Text</label>
+              <input type="text" id="cfg_announcement" class="w-full px-4 py-3 rounded-xl bg-brand-dark border border-white/10 text-white text-sm" />
+            </div>
+          </div>
+
+          <div class="mt-6 flex justify-end">
+            <button onclick="saveGeneralSettings()" class="px-6 py-2.5 rounded-xl bg-brand-gold hover:bg-brand-goldHover text-black font-bold text-xs uppercase tracking-wider">
+              Save Business Details
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ================= TAB 2: SERVICES & PRICING ================= -->
+      <div id="tab-services" class="tab-content hidden space-y-6">
+        <div class="bg-brand-card rounded-2xl border border-white/10 p-6">
+          <div class="flex items-center justify-between mb-6">
+            <div>
+              <h2 class="text-lg font-heading font-bold text-white">Services & Pricing Grid</h2>
+              <p class="text-xs text-gray-400 mt-1">Add, update prices, or edit descriptions displayed on the website</p>
+            </div>
+            <button onclick="addNewServicePrompt()" class="px-4 py-2 rounded-xl bg-brand-gold text-black font-bold text-xs uppercase flex items-center gap-1.5">
+              <i data-lucide="plus" class="w-4 h-4"></i> Add New Service
+            </button>
+          </div>
+
+          <div id="servicesEditorList" class="space-y-4">
+            <!-- Rendered dynamically -->
+          </div>
+
+          <div class="mt-6 flex justify-end">
+            <button onclick="saveServicesSettings()" class="px-6 py-2.5 rounded-xl bg-brand-gold hover:bg-brand-goldHover text-black font-bold text-xs uppercase tracking-wider">
+              Save All Services
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ================= TAB 3: GALLERY PHOTOS ================= -->
+      <div id="tab-gallery" class="tab-content hidden space-y-6">
+        <div class="bg-brand-card rounded-2xl border border-white/10 p-6">
+          <div class="flex items-center justify-between mb-6">
+            <div>
+              <h2 class="text-lg font-heading font-bold text-white">Gallery Photos</h2>
+              <p class="text-xs text-gray-400 mt-1">Manage haircut photos, captions, and styles</p>
+            </div>
+            <button onclick="addNewPhotoPrompt()" class="px-4 py-2 rounded-xl bg-brand-gold text-black font-bold text-xs uppercase flex items-center gap-1.5">
+              <i data-lucide="plus" class="w-4 h-4"></i> Add Image URL
+            </button>
+          </div>
+
+          <div id="galleryEditorGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <!-- Rendered dynamically -->
+          </div>
+
+          <div class="mt-6 flex justify-end">
+            <button onclick="saveGallerySettings()" class="px-6 py-2.5 rounded-xl bg-brand-gold hover:bg-brand-goldHover text-black font-bold text-xs uppercase tracking-wider">
+              Save Gallery
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ================= TAB 4: OPENING HOURS ================= -->
+      <div id="tab-hours" class="tab-content hidden space-y-6">
+        <div class="bg-brand-card rounded-2xl border border-white/10 p-6">
+          <h2 class="text-lg font-heading font-bold text-white mb-2">Weekly Trading Hours</h2>
+          <p class="text-xs text-gray-400 mb-6">Update times shown on the location & footer cards</p>
+
+          <div id="hoursEditorGrid" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <!-- Rendered dynamically -->
+          </div>
+
+          <div class="mt-6 flex justify-end">
+            <button onclick="saveHoursSettings()" class="px-6 py-2.5 rounded-xl bg-brand-gold hover:bg-brand-goldHover text-black font-bold text-xs uppercase tracking-wider">
+              Save Hours
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ================= TAB 5: HERO & ABOUT COPY ================= -->
+      <div id="tab-content" class="tab-content hidden space-y-6">
+        <div class="bg-brand-card rounded-2xl border border-white/10 p-6 space-y-6">
+          <h2 class="text-lg font-heading font-bold text-white mb-2">Hero & About Text Content</h2>
+
+          <div class="space-y-4">
+            <h3 class="text-sm font-mono uppercase text-brand-gold">Hero Section</h3>
+            <div>
+              <label class="block text-xs font-mono text-gray-400 mb-1">Hero Subheading / Tagline</label>
+              <input type="text" id="cfg_heroTagline" class="w-full px-4 py-3 rounded-xl bg-brand-dark border border-white/10 text-white text-sm" />
+            </div>
+            <div>
+              <label class="block text-xs font-mono text-gray-400 mb-1">Hero Body Paragraph</label>
+              <textarea id="cfg_heroParagraph" rows="3" class="w-full px-4 py-3 rounded-xl bg-brand-dark border border-white/10 text-white text-sm"></textarea>
+            </div>
+          </div>
+
+          <div class="space-y-4 pt-4 border-t border-white/10">
+            <h3 class="text-sm font-mono uppercase text-brand-gold">About Section</h3>
+            <div>
+              <label class="block text-xs font-mono text-gray-400 mb-1">About Paragraph 1</label>
+              <textarea id="cfg_aboutP1" rows="3" class="w-full px-4 py-3 rounded-xl bg-brand-dark border border-white/10 text-white text-sm"></textarea>
+            </div>
+            <div>
+              <label class="block text-xs font-mono text-gray-400 mb-1">About Paragraph 2</label>
+              <textarea id="cfg_aboutP2" rows="3" class="w-full px-4 py-3 rounded-xl bg-brand-dark border border-white/10 text-white text-sm"></textarea>
+            </div>
+          </div>
+
+          <div class="flex justify-end">
+            <button onclick="saveCopySettings()" class="px-6 py-2.5 rounded-xl bg-brand-gold hover:bg-brand-goldHover text-black font-bold text-xs uppercase tracking-wider">
+              Save Copy
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ================= TAB 6: SECURITY & PASSWORD ================= -->
+      <div id="tab-security" class="tab-content hidden space-y-6">
+        <div class="bg-brand-card rounded-2xl border border-white/10 p-6 max-w-xl">
+          <h2 class="text-lg font-heading font-bold text-white mb-2">Change Admin Password</h2>
+          <p class="text-xs text-gray-400 mb-6">Change your master password. Passwords are saved only as secure cryptographic SHA-256 hashes.</p>
+
+          <form onsubmit="handlePasswordChange(event)" class="space-y-4">
+            <div>
+              <label class="block text-xs font-mono uppercase text-gray-400 mb-1">Current Password</label>
+              <input type="password" id="currPassInput" required class="w-full px-4 py-3 rounded-xl bg-brand-dark border border-white/10 text-white text-sm" />
+            </div>
+            <div>
+              <label class="block text-xs font-mono uppercase text-gray-400 mb-1">New Password</label>
+              <input type="password" id="newPassInput" required minlength="5" class="w-full px-4 py-3 rounded-xl bg-brand-dark border border-white/10 text-white text-sm" />
+            </div>
+            <button type="submit" class="px-6 py-3 rounded-xl bg-brand-gold hover:bg-brand-goldHover text-black font-bold text-xs uppercase tracking-wider">
+              Update Master Password
+            </button>
+          </form>
+        </div>
+      </div>
+
+      <!-- ================= TAB 7: BACKUP & RESTORE ================= -->
+      <div id="tab-backup" class="tab-content hidden space-y-6">
+        <div class="bg-brand-card rounded-2xl border border-white/10 p-6 space-y-6">
+          <div>
+            <h2 class="text-lg font-heading font-bold text-white mb-1">Configuration Backup & Restore</h2>
+            <p class="text-xs text-gray-400">Export your complete barbershop configuration as a single JSON file or restore a previous backup.</p>
+          </div>
+
+          <div class="flex flex-wrap gap-4">
+            <button onclick="exportConfigFile()" class="px-5 py-3 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-white font-bold text-xs uppercase flex items-center gap-2">
+              <i data-lucide="download" class="w-4 h-4 text-brand-gold"></i>
+              <span>Export site-config.json</span>
+            </button>
+
+            <label class="px-5 py-3 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-white font-bold text-xs uppercase flex items-center gap-2 cursor-pointer">
+              <i data-lucide="upload" class="w-4 h-4 text-brand-gold"></i>
+              <span>Import Config File</span>
+              <input type="file" id="importFileInput" accept=".json" class="hidden" onchange="importConfigFile(event)" />
+            </label>
+
+            <button onclick="resetToFactoryDefaults()" class="px-5 py-3 rounded-xl bg-red-500/10 hover:bg-red-500/20 border border-red-500/20 text-red-400 font-bold text-xs uppercase flex items-center gap-2">
+              <i data-lucide="refresh-ccw" class="w-4 h-4"></i>
+              <span>Reset to Defaults</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Script Logic -->
+  <script>
+    // SHA-256 Helper (Ensures password is never compared or stored in clear text)
+    async function sha256(text) {
+      const buffer = new TextEncoder().encode(text);
+      const hashBuffer = await crypto.subtle.digest('SHA-256', buffer);
+      const hashArray = Array.from(new Uint8Array(hashBuffer));
+      return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+    }
+
+    // Default SHA-256 for password '12345'
+    const DEFAULT_PASS_HASH = "5994471abb01112afcc18159f6cc74b4f511b99806da59b3caf5a9c173cacfc5";
+
+    // Standard initial site configuration
+    const INITIAL_CONFIG = {
+      shopName: "Rajie’s Barber Shop",
+      phone: "082 399 2915",
+      address: "Morgenster Shopping Centre, 17 Anna Marie Drive, Mitchells Plain, Cape Town",
+      announcement: "Now accepting WhatsApp bookings & walk-ins in Morgenster Shopping Centre, Mitchells Plain",
+      heroTagline: "Professional Cuts. Sharp Style.",
+      heroParagraph: "Step into Rajie’s for Mitchells Plain’s cleanest skin fades, precision beard shaping, crisp scissor cuts, and modern styling. Conveniently located at Morgenster Shopping Centre.",
+      aboutP1: "Located right in the heart of Mitchells Plain at Morgenster Shopping Centre, Rajie’s Barber Shop delivers a top-tier grooming experience without the pretension. We specialize in contemporary hair styling and timeless barbering traditions for men, teens, and children.",
+      aboutP2: "Whether you need an ultra-smooth skin fade before the weekend, a disciplined beard shape-up with hot towel treatment, or a clean school cut for your boy, our attention to detail and hygienic tools ensure you leave feeling confident and looking immaculate.",
+      hours: [
+        { day: "Monday", time: "08:30 – 18:00" },
+        { day: "Tuesday", time: "08:30 – 18:00" },
+        { day: "Wednesday", time: "08:30 – 18:00" },
+        { day: "Thursday", time: "08:30 – 18:00" },
+        { day: "Friday", time: "08:30 – 18:00" },
+        { day: "Saturday", time: "08:00 – 17:00" },
+        { day: "Sunday & Holidays", time: "09:00 – 14:00" }
+      ],
+      services: [
+        { id: 1, title: "Haircut", price: "Price coming soon", desc: "Tailored traditional and modern haircut including scissor-work, razor edging, and clean neckline finish.", duration: "30 mins" },
+        { id: 2, title: "Skin Fade", price: "Price coming soon", desc: "Low, mid, or high drop fades meticulously blended to zero skin level with clean razor-sharp borders.", duration: "35 mins" },
+        { id: 3, title: "Beard Grooming", price: "Price coming soon", desc: "Beard trimming, symmetrical cheek and jawline razor edging, moustache shaping, and nourishing balm.", duration: "20 mins" },
+        { id: 4, title: "Hair & Beard Package", price: "Price coming soon", desc: "Our comprehensive full-grooming service combining your haircut or skin fade with an extensive beard trim and shape.", duration: "45 mins" },
+        { id: 5, title: "Kids Haircuts", price: "Price coming soon", desc: "Patient, gentle, and stylish cuts for boys and toddlers. From neat school regulation cuts to fresh modern styles.", duration: "25 mins" },
+        { id: 6, title: "Styling & Hair Design", price: "Price coming soon", desc: "Pomade/matte styling, textured crops, razor parts, side graphics, and hair enhancements for weddings & events.", duration: "20 mins" }
+      ],
+      gallery: [
+        { id: 1, url: "https://images.unsplash.com/photo-1503951914875-452162b0f3f1?auto=format&fit=crop&w=800&q=80", title: "Razor Line Up", tag: "Skin Fade" },
+        { id: 2, url: "https://images.unsplash.com/photo-1585747860715-2ba37e788b70?auto=format&fit=crop&w=800&q=80", title: "High Drop Fade", tag: "Modern Style" },
+        { id: 3, url: "https://images.unsplash.com/photo-1621605815971-fbc98d665033?auto=format&fit=crop&w=800&q=80", title: "Beard Sculpt", tag: "Grooming" },
+        { id: 4, url: "https://images.unsplash.com/photo-1599351431202-1e0f0137899a?auto=format&fit=crop&w=800&q=80", title: "Clean Equipment", tag: "Hygiene First" },
+        { id: 5, url: "https://images.unsplash.com/photo-1512690459411-b9245aed614b?auto=format&fit=crop&w=800&q=80", title: "Shop Interior", tag: "Barber Chairs" },
+        { id: 6, url: "https://images.unsplash.com/photo-1593702295094-ada7554100c3?auto=format&fit=crop&w=800&q=80", title: "Textured Crop", tag: "Modern Cut" },
+        { id: 7, url: "https://images.unsplash.com/photo-1501196354995-cbb51c65aaea?auto=format&fit=crop&w=800&q=80", title: "Sharp Neckline", tag: "Finishing" },
+        { id: 8, url: "https://images.unsplash.com/photo-1517832606589-7629c3395909?auto=format&fit=crop&w=800&q=80", title: "Young Gents", tag: "Kids Style" }
+      ]
+    };
+
+    // Load active config
+    function getConfig() {
+      const stored = localStorage.getItem('rajies_barber_data');
+      if (!stored) {
+        localStorage.setItem('rajies_barber_data', JSON.stringify(INITIAL_CONFIG));
+        return INITIAL_CONFIG;
+      }
+      try {
+        return JSON.parse(stored);
+      } catch (e) {
+        return INITIAL_CONFIG;
+      }
+    }
+
+    function saveConfig(data) {
+      localStorage.setItem('rajies_barber_data', JSON.stringify(data));
+      showToast();
+    }
+
+    function showToast() {
+      const toast = document.getElementById('saveToast');
+      toast.classList.remove('translate-y-24', 'opacity-0');
+      setTimeout(() => {
+        toast.classList.add('translate-y-24', 'opacity-0');
+      }, 2500);
+    }
+
+    // Authentication
+    async function handleLogin(e) {
+      e.preventDefault();
+      const input = document.getElementById('passwordInput').value;
+      const hashedInput = await sha256(input);
+      const activeHash = localStorage.getItem('rajies_admin_hash') || DEFAULT_PASS_HASH;
+
+      if (hashedInput === activeHash) {
+        sessionStorage.setItem('rajies_authenticated', 'true');
+        document.getElementById('loginScreen').classList.add('hidden');
+        document.getElementById('adminDashboard').classList.remove('hidden');
+        populateAdminFields();
+        lucide.createIcons();
+      } else {
+        document.getElementById('loginError').classList.remove('hidden');
+      }
+    }
+
+    function handleLogout() {
+      sessionStorage.removeItem('rajies_authenticated');
+      window.location.reload();
+    }
+
+    // Check existing session
+    window.addEventListener('DOMContentLoaded', () => {
+      lucide.createIcons();
+      if (sessionStorage.getItem('rajies_authenticated') === 'true') {
+        document.getElementById('loginScreen').classList.add('hidden');
+        document.getElementById('adminDashboard').classList.remove('hidden');
+        populateAdminFields();
+      }
+    });
+
+    // Switch Tabs
+    function switchTab(tabId) {
+      document.querySelectorAll('.tab-content').forEach(c => c.classList.add('hidden'));
+      document.querySelectorAll('.tab-btn').forEach(b => {
+        b.classList.remove('bg-brand-gold', 'text-black', 'font-bold');
+        b.classList.add('bg-white/5', 'text-gray-300');
+      });
+
+      const activeContent = document.getElementById(tabId);
+      const activeBtn = document.querySelector(`[data-tab="${tabId}"]`);
+      if (activeContent) activeContent.classList.remove('hidden');
+      if (activeBtn) {
+        activeBtn.classList.remove('bg-white/5', 'text-gray-300');
+        activeBtn.classList.add('bg-brand-gold', 'text-black', 'font-bold');
+      }
+      lucide.createIcons();
+    }
+
+    // Populate Input Fields
+    function populateAdminFields() {
+      const cfg = getConfig();
+
+      // General
+      document.getElementById('cfg_shopName').value = cfg.shopName || '';
+      document.getElementById('cfg_phone').value = cfg.phone || '';
+      document.getElementById('cfg_address').value = cfg.address || '';
+      document.getElementById('cfg_announcement').value = cfg.announcement || '';
+
+      // Copy
+      document.getElementById('cfg_heroTagline').value = cfg.heroTagline || '';
+      document.getElementById('cfg_heroParagraph').value = cfg.heroParagraph || '';
+      document.getElementById('cfg_aboutP1').value = cfg.aboutP1 || '';
+      document.getElementById('cfg_aboutP2').value = cfg.aboutP2 || '';
+
+      // Services List
+      renderServicesList(cfg.services || []);
+
+      // Gallery Grid
+      renderGalleryGrid(cfg.gallery || []);
+
+      // Hours Grid
+      renderHoursGrid(cfg.hours || []);
+    }
+
+    // Render Services
+    function renderServicesList(services) {
+      const container = document.getElementById('servicesEditorList');
+      container.innerHTML = services.map((s, idx) => `
+        <div class="p-4 rounded-xl bg-brand-dark/80 border border-white/10 grid grid-cols-1 md:grid-cols-12 gap-3 items-center">
+          <div class="md:col-span-3">
+            <label class="text-[10px] font-mono text-gray-400">Service Name</label>
+            <input type="text" value="${s.title}" class="srv-title w-full px-3 py-2 rounded-lg bg-black/40 border border-white/10 text-white text-xs" data-idx="${idx}" />
+          </div>
+          <div class="md:col-span-3">
+            <label class="text-[10px] font-mono text-gray-400">Price Display</label>
+            <input type="text" value="${s.price}" class="srv-price w-full px-3 py-2 rounded-lg bg-black/40 border border-white/10 text-brand-gold text-xs font-mono" data-idx="${idx}" />
+          </div>
+          <div class="md:col-span-2">
+            <label class="text-[10px] font-mono text-gray-400">Est. Duration</label>
+            <input type="text" value="${s.duration}" class="srv-duration w-full px-3 py-2 rounded-lg bg-black/40 border border-white/10 text-white text-xs" data-idx="${idx}" />
+          </div>
+          <div class="md:col-span-3">
+            <label class="text-[10px] font-mono text-gray-400">Short Description</label>
+            <input type="text" value="${s.desc}" class="srv-desc w-full px-3 py-2 rounded-lg bg-black/40 border border-white/10 text-gray-300 text-xs" data-idx="${idx}" />
+          </div>
+          <div class="md:col-span-1 flex items-end justify-center pt-3 md:pt-0">
+            <button onclick="removeService(${idx})" class="p-2 text-red-400 hover:bg-red-500/10 rounded-lg transition-colors" title="Delete Service">
+              <i data-lucide="trash-2" class="w-4 h-4"></i>
+            </button>
+          </div>
+        </div>
+      `).join('');
+      lucide.createIcons();
+    }
+
+    function addNewServicePrompt() {
+      const cfg = getConfig();
+      cfg.services.push({
+        id: Date.now(),
+        title: "New Service",
+        price: "Price coming soon",
+        desc: "Description of the haircut or grooming treatment.",
+        duration: "30 mins"
+      });
+      saveConfig(cfg);
+      renderServicesList(cfg.services);
+    }
+
+    function removeService(index) {
+      const cfg = getConfig();
+      cfg.services.splice(index, 1);
+      saveConfig(cfg);
+      renderServicesList(cfg.services);
+    }
+
+    function saveServicesSettings() {
+      const cfg = getConfig();
+      const titles = document.querySelectorAll('.srv-title');
+      const prices = document.querySelectorAll('.srv-price');
+      const durations = document.querySelectorAll('.srv-duration');
+      const descs = document.querySelectorAll('.srv-desc');
+
+      cfg.services = Array.from(titles).map((t, idx) => ({
+        id: cfg.services[idx]?.id || Date.now() + idx,
+        title: t.value.trim(),
+        price: prices[idx].value.trim(),
+        duration: durations[idx].value.trim(),
+        desc: descs[idx].value.trim()
+      }));
+
+      saveConfig(cfg);
+    }
+
+    // Render Gallery
+    function renderGalleryGrid(gallery) {
+      const container = document.getElementById('galleryEditorGrid');
+      container.innerHTML = gallery.map((item, idx) => `
+        <div class="p-3 rounded-xl bg-brand-dark/80 border border-white/10 flex flex-col justify-between">
+          <img src="${item.url}" class="h-32 w-full object-cover rounded-lg mb-2" onerror="this.src='https://via.placeholder.com/300x200?text=Barber+Photo'" />
+          <div class="space-y-2">
+            <input type="text" value="${item.url}" placeholder="Image URL" class="gal-url w-full px-2 py-1.5 rounded bg-black/40 border border-white/10 text-white text-[11px]" data-idx="${idx}" />
+            <input type="text" value="${item.title}" placeholder="Photo Title" class="gal-title w-full px-2 py-1.5 rounded bg-black/40 border border-white/10 text-white text-[11px]" data-idx="${idx}" />
+            <input type="text" value="${item.tag}" placeholder="Category Tag" class="gal-tag w-full px-2 py-1.5 rounded bg-black/40 border border-white/10 text-brand-gold text-[11px]" data-idx="${idx}" />
+          </div>
+          <button onclick="removeGalleryPhoto(${idx})" class="mt-3 w-full py-1.5 rounded bg-red-500/10 text-red-400 hover:bg-red-500/20 text-[11px] font-semibold flex items-center justify-center gap-1">
+            <i data-lucide="trash" class="w-3 h-3"></i> Delete
+          </button>
+        </div>
+      `).join('');
+      lucide.createIcons();
+    }
+
+    function addNewPhotoPrompt() {
+      const cfg = getConfig();
+      cfg.gallery.push({
+        id: Date.now(),
+        url: "https://images.unsplash.com/photo-1503951914875-452162b0f3f1?auto=format&fit=crop&w=800&q=80",
+        title: "Haircut Style",
+        tag: "Fresh Cut"
+      });
+      saveConfig(cfg);
+      renderGalleryGrid(cfg.gallery);
+    }
+
+    function removeGalleryPhoto(idx) {
+      const cfg = getConfig();
+      cfg.gallery.splice(idx, 1);
+      saveConfig(cfg);
+      renderGalleryGrid(cfg.gallery);
+    }
+
+    function saveGallerySettings() {
+      const cfg = getConfig();
+      const urls = document.querySelectorAll('.gal-url');
+      const titles = document.querySelectorAll('.gal-title');
+      const tags = document.querySelectorAll('.gal-tag');
+
+      cfg.gallery = Array.from(urls).map((u, idx) => ({
+        id: cfg.gallery[idx]?.id || Date.now() + idx,
+        url: u.value.trim(),
+        title: titles[idx].value.trim(),
+        tag: tags[idx].value.trim()
+      }));
+
+      saveConfig(cfg);
+    }
+
+    // Render Hours
+    function renderHoursGrid(hours) {
+      const container = document.getElementById('hoursEditorGrid');
+      container.innerHTML = hours.map((h, idx) => `
+        <div class="flex items-center gap-3 p-3 rounded-xl bg-brand-dark/80 border border-white/10">
+          <input type="text" value="${h.day}" class="hour-day w-1/3 px-3 py-2 rounded bg-black/40 border border-white/10 text-white text-xs font-mono" />
+          <input type="text" value="${h.time}" class="hour-time flex-1 px-3 py-2 rounded bg-black/40 border border-white/10 text-brand-gold text-xs font-mono" />
+        </div>
+      `).join('');
+    }
+
+    function saveHoursSettings() {
+      const cfg = getConfig();
+      const days = document.querySelectorAll('.hour-day');
+      const times = document.querySelectorAll('.hour-time');
+
+      cfg.hours = Array.from(days).map((d, idx) => ({
+        day: d.value.trim(),
+        time: times[idx].value.trim()
+      }));
+
+      saveConfig(cfg);
+    }
+
+    // Save General Settings
+    function saveGeneralSettings() {
+      const cfg = getConfig();
+      cfg.shopName = document.getElementById('cfg_shopName').value.trim();
+      cfg.phone = document.getElementById('cfg_phone').value.trim();
+      cfg.address = document.getElementById('cfg_address').value.trim();
+      cfg.announcement = document.getElementById('cfg_announcement').value.trim();
+      saveConfig(cfg);
+    }
+
+    // Save Copy Settings
+    function saveCopySettings() {
+      const cfg = getConfig();
+      cfg.heroTagline = document.getElementById('cfg_heroTagline').value.trim();
+      cfg.heroParagraph = document.getElementById('cfg_heroParagraph').value.trim();
+      cfg.aboutP1 = document.getElementById('cfg_aboutP1').value.trim();
+      cfg.aboutP2 = document.getElementById('cfg_aboutP2').value.trim();
+      saveConfig(cfg);
+    }
+
+    // Password Management
+    async function handlePasswordChange(e) {
+      e.preventDefault();
+      const currPass = document.getElementById('currPassInput').value;
+      const newPass = document.getElementById('newPassInput').value;
+
+      const hashedCurrent = await sha256(currPass);
+      const activeHash = localStorage.getItem('rajies_admin_hash') || DEFAULT_PASS_HASH;
+
+      if (hashedCurrent !== activeHash) {
+        alert("The current password you entered is incorrect.");
+        return;
+      }
+
+      const hashedNew = await sha256(newPass);
+      localStorage.setItem('rajies_admin_hash', hashedNew);
+      alert("Master password changed successfully!");
+      document.getElementById('currPassInput').value = '';
+      document.getElementById('newPassInput').value = '';
+    }
+
+    // Backup & Restore Handlers
+    function exportConfigFile() {
+      const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(getConfig(), null, 2));
+      const downloadAnchor = document.createElement('a');
+      downloadAnchor.setAttribute("href", dataStr);
+      downloadAnchor.setAttribute("download", "rajies_barber_config.json");
+      document.body.appendChild(downloadAnchor);
+      downloadAnchor.click();
+      downloadAnchor.remove();
+    }
+
+    function importConfigFile(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        try {
+          const parsed = JSON.parse(e.target.result);
+          if (parsed && typeof parsed === 'object') {
+            saveConfig(parsed);
+            populateAdminFields();
+            alert("Site configuration successfully restored!");
+          }
+        } catch (err) {
+          alert("Invalid configuration JSON file.");
+        }
+      };
+      reader.readAsText(file);
+    }
+
+    function resetToFactoryDefaults() {
+      if (confirm("Reset all settings, services, and photos to original defaults?")) {
+        localStorage.removeItem('rajies_barber_data');
+        populateAdminFields();
+        showToast();
+      }
+    }
+  </script>
+</body>
+</html>
